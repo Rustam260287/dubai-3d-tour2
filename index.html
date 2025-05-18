@@ -8,18 +8,36 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-  <div id="canvas-container" class="w-full h-[400px]"></div>
+  <div id="canvas-container" class="w-full h-[400px] bg-gray-200"></div>
   <div class="mt-2 text-sm text-gray-600 text-center px-4">
     <p>Touch left side to move, right side to look around.</p>
     <p>لمس الجانب الأيسر للتحرك، والأيمن للنظر حولك.</p>
+    <p id="debug" class="text-red-500"></p>
   </div>
   <script>
+    // Debug function
+    function log(message) {
+      document.getElementById('debug').textContent = message;
+    }
+
+    // Check WebGL support
+    if (!Detector.webgl) {
+      log("WebGL is not supported by your browser.");
+    } else {
+      log("WebGL is supported. Initializing scene...");
+    }
+
     // Three.js Scene Setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.getElementById('canvas-container').appendChild(renderer.domElement);
+    if (!renderer) {
+      log("Failed to initialize renderer.");
+    } else {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+      log("Renderer initialized.");
+    }
 
     // Simple interior: floor and walls
     const floorGeometry = new THREE.PlaneGeometry(5, 5);
@@ -65,6 +83,7 @@
       touchStartX = touch.clientX;
       touchStartY = touch.clientY;
       isMoving = true;
+      log("Touch started.");
     };
 
     const onTouchMove = (event) => {
@@ -89,6 +108,7 @@
     const onTouchEnd = () => {
       isMoving = false;
       direction = { x: 0, y: 0 };
+      log("Touch ended.");
     };
 
     renderer.domElement.addEventListener('touchstart', onTouchStart);
@@ -104,7 +124,7 @@
         camera.position.x += moveX * Math.cos(yaw) + moveZ * Math.sin(yaw);
         camera.position.z += moveZ * Math.cos(yaw) - moveX * Math.sin(yaw);
       }
-      renderer.render(scene, camera);
+      if (renderer) renderer.render(scene, camera);
     }
     animate();
 
@@ -112,8 +132,11 @@
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (renderer) renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    // Note: Detector.webgl is not natively available, using a placeholder
+    // For proper WebGL detection, you'd need a library like Detector.js
   </script>
 </body>
 </html>
