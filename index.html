@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dubai 3D Tour</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="canvas-container" class="w-full h-[400px]"></div>
+  <div class="mt-2 text-sm text-gray-600 text-center px-4">
+    <p>Touch left side to move, right side to look around.</p>
+    <p>لمس الجانب الأيسر للتحرك، والأيمن للنظر حولك.</p>
+  </div>
+  <script>
+    // Three.js Scene Setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    // Simple interior: floor and walls
+    const floorGeometry = new THREE.PlaneGeometry(5, 5);
+    const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    scene.add(floor);
+
+    const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
+    const wallGeometry = new THREE.PlaneGeometry(5, 2);
+    const walls = [
+      { position: [0, 1, -2.5], rotation: [0, 0, 0] },
+      { position: [0, 1, 2.5], rotation: [0, Math.PI, 0] },
+      { position: [-2.5, 1, 0], rotation: [0, Math.PI / 2, 0] },
+      { position: [2.5, 1, 0], rotation: [0, -Math.PI / 2, 0] }
+    ];
+    walls.forEach(({ position, rotation }) => {
+      const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+      wall.position.set(...position);
+      wall.rotation.set(...rotation);
+      scene.add(wall);
+    });
+
+    // Basic lighting
+    const light = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(light);
+
+    camera.position.y = 1.6;
+    camera.position.z = 1;
+
+    // Touch controls
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let yaw = 0;
+    let pitch = 0;
+    let isMoving = false;
+    let direction = { x: 0, y: 0 };
+    const sensitivity = 0.005;
+    const speed = 0.05;
+
+    const onTouchStart = (event) => {
+      const touch = event.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      isMoving = true;
+    };
+
+    const onTouchMove = (event) => {
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+
+      if (touch.clientX > window.innerWidth / 2) {
+        yaw -= deltaX * sensitivity;
+        pitch -= deltaY * sensitivity;
+        pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+        camera.rotation.set(pitch, yaw, 0);
+      } else {
+        direction.x = deltaX / 100;
+        direction.y = -deltaY / 100;
+      }
+
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    };
+
+    const onTouchEnd = () => {
+      isMoving = false;
+      direction = { x: 0, y: 0 };
+    };
+
+    renderer.domElement.addEventListener('touchstart', onTouchStart);
+    renderer.domElement.addEventListener('touchmove', onTouchMove);
+    renderer.domElement.addEventListener('touchend', onTouchEnd);
+
+    // Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+      if (isMoving) {
+        const moveX = direction.x * speed;
+        const moveZ = direction.y * speed;
+        camera.position.x += moveX * Math.cos(yaw) + moveZ * Math.sin(yaw);
+        camera.position.z += moveZ * Math.cos(yaw) - moveX * Math.sin(yaw);
+      }
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
